@@ -1,94 +1,199 @@
 #!/usr/bin/env python3
 
 import sys
-from typing import List
+from typing import List, Tuple
+from enum import Enum, auto
 from dataclasses import dataclass
 
-def rpn_shift_args(argv) -> str:
+# Trace Debug Prints
+TRACE = False
+
+# Initial Stack Capacity
+RPN_INITIAL_STACK_CAP = 256
+
+# Shifts Command-Line Arguments
+def rpn_shift_args(argv) -> Tuple[int , str]:
     if (len(argv) == 0):
         print(f"[ERROR] Nothing to Pop")
-        exit(1)
+        return 1 , " "
     else:
-        return argv.pop(0)
+        return 0, argv.pop(0)
 
+# Returns True when a token is operation code
 def rpn_token_op(token: str) -> bool:
-    return token == '+'
+    return token == '+' or token == '*' or token == '/' or token == '-'
 
+# Returns True when a token is number
 def rpn_token_digit(token: str) -> bool:
-    return token >= '0' and token <= '9'
+    try:
+        float(token)
+        return True
+    except ValueError:
+        return False
 
-def rpn_read_entire_file(path: str) -> list:
+# Read a file and turns it into list of chars
+def rpn_read_entire_file(path: str) -> List[str]:
     with open(path, "r") as f:
         file_read = f.read()
     return file_read.split()
 
-TOKEN_OPCODE  = 0
-TOKEN_DIGIT   = 1
-TOKEN_UNKNOWN = 2
+# Token Types
+class RPN_TokenType(Enum):
+    TOKEN_DIGIT = auto()
+    TOKEN_PLUS = auto()
+    TOKEN_MINUS = auto()
+    TOKEN_DIV = auto()
+    TOKEN_MULT = auto()
 
+# Token Data Structure
 @dataclass
 class RPN_Token:
-    token_type: int
+    token_type: RPN_TokenType
     token:      str
 
+# Stack Data Structure
 @dataclass
 class RPN_Stack:
     stack_slots:    List[RPN_Token]
     stack_count:    int
     stack_capacity: int
 
-def rpn_create_token(token_type: int, token: str) -> RPN_Token:
+# Function that creates and returns a RPN_Token
+def rpn_create_token(token_type: RPN_TokenType, token: str) -> RPN_Token:
     return RPN_Token(token_type, token)
 
+# Function that pushes a token onto stack
 def rpn_stack_push(stack: RPN_Stack, token: RPN_Token) -> bool:
     if (stack.stack_count >= stack.stack_capacity):
-        print(f"[ERROR] Stack Overflow count: {stack.stack_count}, capacity: {stack.stack_capacity}")
-        return False
+        stack.stack_capacity *= 2
     stack.stack_slots.append(token)
     stack.stack_count += 1
+    if TRACE:
+        print(f"[INFO] Pushing {token}")
     return True
 
+# Function that Pops a token from stack
 def rpn_stack_pop(stack: RPN_Stack) -> RPN_Token:
     if (stack.stack_count <= 0):
         print(f"[ERROR] Attempting to Pop from Empty Stack: count: {stack.stack_count}")
         exit(1)
-    stack.stack_count -= 1
-    return stack.stack_slots[stack.stack_count]
+    stack.stack_count = stack.stack_count - 1
+    res = stack.stack_slots.pop(stack.stack_count)
+    if TRACE:
+        print("[INFO] Popping %s" % res.token)
+    return res
 
+# Function that Dumps Stack into stdout
 def rpn_dump_stack(stack: RPN_Stack) -> None:
-    for i in range(0, stack.stack_count):
+    if stack.stack_count == 0:
+        print("Stack Empty")
+        exit(1)
+    for i in range(stack.stack_count):
         token = stack.stack_slots[i]
-        print(f"Token: {token.token}, Type: {token.token_type}")
-    
-def main() -> int:
-    argv = sys.argv[:]
-    
-    subcommand = rpn_shift_args(argv)
-    if len(sys.argv) <= 0:
-        print("[ERROR] Usage: %s <input_file>" % subcommand)
-        return 1
+        print(f"[INFO] Token: {token}")
 
-    path = rpn_shift_args(argv)
-    char_list = rpn_read_entire_file(path)
-
-    stack = RPN_Stack([], 0, 5)
+# Tokenize the Raw Character List
+def rpn_tokenize_raw_list(char_list: List[str]) -> List[RPN_Token]:
+    tokens = []
     for i in char_list:
         if rpn_token_digit(i):
-            token = rpn_create_token(TOKEN_DIGIT, i)
-            if rpn_stack_push(stack, token) == False:
-                return 1
+            token = rpn_create_token(RPN_TokenType.TOKEN_DIGIT, i)
         elif rpn_token_op(i):
-            token = rpn_create_token(TOKEN_OPCODE, i)
-            if rpn_stack_push(stack, token) == False:
-                return 1
+            match i:
+                case '+':
+                    token = rpn_create_token(RPN_TokenType.TOKEN_PLUS, i)
+                case '-':
+                    token = rpn_create_token(RPN_TokenType.TOKEN_MINUS, i)
+                case '/':
+                    token = rpn_create_token(RPN_TokenType.TOKEN_DIV, i)
+                case '*':
+                    token = rpn_create_token(RPN_TokenType.TOKEN_MULT, i)
+                case _:
+                    print(f"[ERROR] Unknown Opcode: `{i}`") # Exit with non-zero when no known opcode is encountered
+                    exit(1)
         else:
-            token = rpn_create_token(TOKEN_UNKNOWN, i)
-            if rpn_stack_push(stack, token) == False:
-                return 1
+            print(f"[ERROR] Unknown operation code: {i}")
+            exit(1)
+        tokens.append(token)
 
+    return tokens
+
+# The Reverse Polish Notation Algorithm
+def rpn(stack: RPN_Stack, test_list: List[RPN_Token]) -> bool:
+    # Iterate Over Character Test List
+    for token in test_list:
+        # Push Digits
+        if token.token_type == RPN_TokenType.TOKEN_DIGIT:
+            if rpn_stack_push(stack, token) == False:
+                return False
+
+        elif rpn_token_op(token.token):
+            # When Encountered a opcode
+            right  = rpn_stack_pop(stack) # pop top
+            left   = rpn_stack_pop(stack) # pop top - 1
+            result = 0.0 # var to hold result
+            if token.token_type == RPN_TokenType.TOKEN_PLUS:
+                result = float(left.token) + float(right.token) # Add
+                if TRACE:
+                    print(f"[INFO] Adding {float(left.token)} to {float(right.token)}")
+            elif token.token_type == RPN_TokenType.TOKEN_MINUS:
+                result = float(left.token) - float(right.token) # subtract
+                if TRACE:
+                    print(f"[INFO] Subtracting {float(left.token)} to {float(right.token)}")
+            elif token.token_type == RPN_TokenType.TOKEN_DIV:
+                result = float(left.token) / float(right.token) # divide
+                if TRACE:
+                    print(f"[INFO] Dividing {float(left.token)} to {float(right.token)}")
+            elif token.token_type == RPN_TokenType.TOKEN_MULT:
+                result = float(left.token) * float(right.token) # Multiply
+                if TRACE:
+                    print(f"[INFO] Multiplying {float(left.token)} to {float(right.token)}")
+            else:
+                print(f"[ERROR] Unknown Opcode: `{token}`") # Exit with non-zero when no known opcode is encountered
+                return False
+
+            # Push the Result
+            if rpn_stack_push(stack, rpn_create_token(RPN_TokenType.TOKEN_DIGIT, str(result))) == False:
+                return False
+        else:
+            print(f"[ERROR] Unknown Character Encountered: {token}") # Exit if no known char encountered
+            return False
+
+    return True # Exit With Success
+
+# The Entry Point of the Program
+def main() -> int:
+    argv = sys.argv[:] # The Command line args list
+
+    err, subcommand = rpn_shift_args(argv) # Extract Program Name
+    if err > 0:
+        return err
+
+    # If No Test File is provided Exit and print Usage
+    if len(sys.argv) <= 0:
+        print("[USAGE] %s <input_file>" % subcommand)
+        return 1
+
+    err, path = rpn_shift_args(argv) # Extract Test File Name
+    if err > 0:
+        return err
+
+    # Read the Entire test file into list in memory
+    char_list = rpn_read_entire_file(path)
+
+    # Tokenize the List
+    token_list = rpn_tokenize_raw_list(char_list)
+
+    # Initialize Empty Stack With Enough Capacity
+    stack = RPN_Stack([], 0, RPN_INITIAL_STACK_CAP)
+
+    # Execute the Algorithm
+    rpn(stack, token_list)
+
+    # Dump the Stack, Should Contain Final Answer
     rpn_dump_stack(stack)
-    
-    return 0
+
+    return 0 # return Zero
 
 if __name__ == "__main__":
     ret = main()
