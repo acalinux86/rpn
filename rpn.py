@@ -55,8 +55,8 @@ class RPN_Token:
 @dataclass
 class RPN_Stack:
     stack_slots:    List[RPN_Token]
-    stack_count:    int
-    stack_capacity: int
+    stack_count:    int = 0
+    stack_capacity: int = RPN_INITIAL_STACK_CAP
 
 # Function that creates and returns a RPN_Token
 def rpn_create_token(token_type: RPN_TokenType, token: str) -> RPN_Token:
@@ -139,15 +139,15 @@ def rpn(stack: RPN_Stack, test_list: List[RPN_Token]) -> bool:
             elif token.token_type == RPN_TokenType.TOKEN_MINUS:
                 result = float(left.token) - float(right.token) # subtract
                 if TRACE:
-                    print(f"[INFO] Subtracting {float(left.token)} to {float(right.token)}")
+                    print(f"[INFO] Subtracting {float(left.token)} from {float(right.token)}")
             elif token.token_type == RPN_TokenType.TOKEN_DIV:
                 result = float(left.token) / float(right.token) # divide
                 if TRACE:
-                    print(f"[INFO] Dividing {float(left.token)} to {float(right.token)}")
+                    print(f"[INFO] Dividing {float(left.token)} by {float(right.token)}")
             elif token.token_type == RPN_TokenType.TOKEN_MULT:
                 result = float(left.token) * float(right.token) # Multiply
                 if TRACE:
-                    print(f"[INFO] Multiplying {float(left.token)} to {float(right.token)}")
+                    print(f"[INFO] Multiplying {float(left.token)} by {float(right.token)}")
             else:
                 print(f"[ERROR] Unknown Opcode: `{token}`") # Exit with non-zero when no known opcode is encountered
                 return False
@@ -185,7 +185,7 @@ def main() -> int:
     token_list = rpn_tokenize_raw_list(char_list)
 
     # Initialize Empty Stack With Enough Capacity
-    stack = RPN_Stack([], 0, RPN_INITIAL_STACK_CAP)
+    stack = RPN_Stack([])
 
     # Execute the Algorithm
     rpn(stack, token_list)
