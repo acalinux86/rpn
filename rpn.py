@@ -79,7 +79,7 @@ def rpn_stack_pop(stack: RPN_Stack) -> RPN_Token:
     stack.stack_count = stack.stack_count - 1
     res = stack.stack_slots.pop(stack.stack_count)
     if TRACE:
-        print(f"[POP ] {res}")
+        print(f"[POP]  {res}")
     return res
 
 # Function that Dumps Stack into stdout
@@ -140,6 +140,9 @@ def rpn(stack: RPN_Stack, test_list: List[RPN_Token]) -> bool:
                 if TRACE:
                     print(f"[INFO] Subtracting {float(left.token)} from {float(right.token)}")
             elif token.token_type == RPN_TokenType.TOKEN_DIV:
+                if float(right.token) == 0:
+                    print("[ERROR] Division By Zero")
+                    return False
                 result = float(left.token) / float(right.token) # divide
                 if TRACE:
                     print(f"[INFO] Dividing {float(left.token)} by {float(right.token)}")
@@ -196,9 +199,6 @@ def main() -> int:
             # Read the Entire test file into list in memory
             char_list = rpn_read_entire_file(path)
 
-            # Read the Entire test file into list in memory
-            char_list = rpn_read_entire_file(path)
-
             # Tokenize the List
             token_list = rpn_tokenize_raw_list(char_list)
 
@@ -227,7 +227,8 @@ def main() -> int:
                 stack = RPN_Stack([])
 
                 # Execute the Algorithm
-                rpn(stack, token_list)
+                if rpn(stack, token_list) == False:
+                    return 0
 
                 # Dump the Stack, Should Contain Final Answer
                 rpn_dump_stack(stack)
@@ -242,5 +243,4 @@ def main() -> int:
     return 0 # return Zero
 
 if __name__ == "__main__":
-    ret = main()
-    exit(ret)
+    exit(main())
