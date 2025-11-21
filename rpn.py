@@ -164,9 +164,9 @@ def rpn(stack: RPN_Stack, test_list: List[RPN_Token]) -> bool:
     return True # Exit With Success
 
 def rpn_usage(subcommand: str) -> None:
-    print("[USAGE] %s arg [input-file]" % subcommand)
+    print("[USAGE] %s <arg> [input-file]" % subcommand)
     print("[USAGE] arg:")
-    print("[USAGE]     --read            -- Read From Stdin")
+    print("[USAGE]     --read              -- Read From Stdin")
     print("[USAGE]     --file <input-file> -- Read From a Input File")
 
 # The Entry Point of the Program
@@ -189,7 +189,7 @@ def main() -> int:
         return err
 
     match arg:
-        case "--file":
+        case "--file": # Provide Input File
             err, path = rpn_shift_args(argv) # Extract Input File Name
             if err > 0:
                 rpn_usage(subcommand)
@@ -211,7 +211,7 @@ def main() -> int:
             # Dump the Stack, Should Contain Final Answer
             rpn_dump_stack(stack)
 
-        case "--read":
+        case "--read": # Interactive Mode
             # Read From stdin
             print("rpn> " , end="")
             sys.stdout.flush()

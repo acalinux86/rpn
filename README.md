@@ -17,18 +17,16 @@ It reads an input file containing space-separated tokens, converts them into typ
 ``` bash
 $ ./rpn.py --file <input_file>
 ```
-
-###### Example test file 4 in test/:
+#### Example test file 4 in test/:
 ``` bash
 13 12 +
 ```
-
-Example output:
+#### Example output:
 ``` bash
 [INFO] Token: RPN_Token(token_type=<RPN_TokenType.TOKEN_DIGIT: 1>, token='25.0')
 ```
 
-### Reading From the Standard Input
+### Reading From the Standard Input (Interactive Mode)
 ``` bash
 $ rpn> 3 5 +
 $ [INFO] Token: RPN_Token(token_type=<RPN_TokenType.TOKEN_DIGIT: 1>, token='8.0')
@@ -36,13 +34,11 @@ $ rpn>
 ```
 
 ## Input Format
-
 * Tokens must be space-separated
 * Supported operators: `+`, `-`, `*`, `/`
 * Any valid floating-point number is allowed (e.g., `3`, `12`, `7.5`, `-2`)
 
 ## How It Works
-
 1. The input file is split into individual tokens.
 2. Tokens are converted into typed tokens using the enum `RPN_TokenType`.
 3. The evaluator loops through the tokens:
@@ -52,5 +48,4 @@ $ rpn>
 4. At the end, the stack should contain exactly one value: the result
 
 ## Requirements
-
 * Python 3.10 or later
