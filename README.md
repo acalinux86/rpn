@@ -28,6 +28,8 @@ $ ./rpn.py --file <input_file>
 
 ### Reading From the Standard Input (Interactive Mode)
 ``` bash
+$ ./rpn.py --read # Interactive Mode
+
 $ rpn> 3 5 +
 $ [INFO] Token: RPN_Token(token_type=<RPN_TokenType.TOKEN_DIGIT: 1>, token='8.0')
 $ rpn>
